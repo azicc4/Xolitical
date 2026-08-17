@@ -1,0 +1,23 @@
+# Per-user config (copy config.example.json -> config.json)
+config.json
+
+# Incoming media awaiting triage (local only)
+unsorted/
+
+# Actual media files: metadata lives in git, media stays local.
+# Re-fetch via each note's `source` URL.
+vault/_assets/*
+!vault/_assets/.gitkeep
+
+# Per-user Obsidian state (shared vault config IS committed)
+vault/.obsidian/workspace.json
+vault/.obsidian/workspace-mobile.json
+vault/.obsidian/cache
+vault/.obsidian/plugins/*/data.json
+
+# OS / editor junk
+Thumbs.db
+.DS_Store
+desktop.ini
+__pycache__/
+*.pyc

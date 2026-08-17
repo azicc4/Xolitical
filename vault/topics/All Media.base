@@ -1,0 +1,38 @@
+filters:
+  and:
+    - file.inFolder("media")
+properties:
+  note.platform:
+    displayName: Platform
+  note.account:
+    displayName: Account
+  note.added_by:
+    displayName: Added by
+  note.date_posted:
+    displayName: Posted
+  note.date_added:
+    displayName: Added
+views:
+  - type: table
+    name: All media
+    order:
+      - file.name
+      - note.platform
+      - note.account
+      - note.tags
+      - note.date_posted
+      - note.added_by
+    sort:
+      - property: note.date_added
+        direction: DESC
+  - type: table
+    name: Needs review
+    filters:
+      and:
+        - note.tags.contains("needs-review")
+    order:
+      - file.name
+      - note.platform
+      - note.account
+      - note.tags
+      - note.added_by

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "triage",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["tools/triage/server.py", "--no-open"],
+      "port": 8484
+    }
+  ]
+}
