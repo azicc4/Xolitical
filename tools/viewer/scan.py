@@ -113,7 +113,7 @@ def iso(ts):
 
 
 def scan_origin(root: Path, exclude=()):
-    """All media files under root (recursive), oldest creation time first.
+    """All media files under root (recursive), newest creation time first.
 
     Folders in `exclude` (e.g. a vault that happens to sit inside the origin) are skipped.
     """
@@ -159,7 +159,7 @@ def scan_origin(root: Path, exclude=()):
                 **guess_meta(p, root),
                 "_key": (created, _stamp_key(name), p.relative_to(root).as_posix()),
             })
-    items.sort(key=lambda it: it.pop("_key"))
+    items.sort(key=lambda it: it.pop("_key"), reverse=True)
     return items
 
 

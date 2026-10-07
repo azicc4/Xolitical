@@ -32,12 +32,16 @@ Requirements: [Python 3.9+](https://www.python.org/downloads/) and [Obsidian](ht
 
 1. Clone the repo.
 2. Start the viewer:
+   - **Windows:** double-click **`Start Xolitical Viewer.bat`** in the repo folder.
+     - It finds Python, starts the viewer in a minimized window and opens `http://localhost:8484` in your browser.
+     - Double-clicking it again while the viewer is running just reopens the tab.
+     - To stop the viewer, close the minimized "Xolitical Viewer" window.
+     - To pin it to the desktop or taskbar, right-click the file and choose *Send to › Desktop (create shortcut)*.
+   - **Any OS, from a terminal:**
 
-   ```bash
-   python tools/viewer/server.py
-   ```
-
-   On Windows, `py tools/viewer/server.py` makes sure you get the python.org interpreter rather than one bundled with another app. The viewer opens `http://localhost:8484` in your browser.
+     ```bash
+     python tools/viewer/server.py
+     ```
 3. On the start screen:
    1. Enter your **alias**.
    2. Pick the **origin** folder (your downloads).
@@ -50,14 +54,14 @@ Requirements: [Python 3.9+](https://www.python.org/downloads/) and [Obsidian](ht
 
 | Area | What it does |
 |---|---|
-| **Top left: counter** | Sorted (total, plus this session), remaining, new since your last session, average files per session, files per minute, time left. Rates are calculated from your past sessions, counting only active time (pauses over 5 minutes are excluded). **↻ refresh** recomputes them. |
-| **Top: event strip** | Your 10 most recently saved **events**. An event with several files shows as an overlapping stack, with its title wrapped underneath and shown in full on hover. ◀ ▶ page back through up to 50 events. **Click an event (or press Alt+1…0) to pair** the current file with it: its name, categories and tags load into the form. |
-| **Center** | The photo, video, PDF or text file being sorted. Files come **in order of creation date**, across every subfolder of the origin. |
+| **Top left: counter** | Sorted (total, plus this session), remaining, new since your last session, average files per session, files per minute, time left. Rates are calculated from your past sessions, counting only active time (pauses over 5 minutes are excluded). Hover over a number for its meaning. **↻** recomputes them, and **⏏** ends the session. |
+| **Top: event strip** | Your 10 most recently saved **events**. An event with several files shows as an overlapping stack, with its title underneath (up to two lines) and shown in full on hover. ◀ ▶ page back through up to 50 events. **Click an event (or press Alt+1…0) to pair** the current file with it: its name, categories and tags load into the form. |
+| **Center** | The photo, video, PDF or text file being sorted, scaled to fit the viewer, which takes up most of the screen. Files come by creation date, **newest first**, across every subfolder of the origin. |
 | **Event** (required) | Every file needs an event name. Typing suggests existing events (autocomplete), and picking one pairs with it, even if it's older than the strip shows. While paired, editing the name renames the event (after you confirm). |
 | **Tags** | Your 10 most recent tags as one-click chips, plus a search box (Enter creates a new tag). Tags belong to the event. |
 | **Note** | Applies to this file only. |
 | **Details** | Source URL, account, posted date and platform, filled in automatically from Twitter-style filenames (`account-tweetID-…-YYYYMMDD_HHMMSS`). **Fill in the source URL whenever one exists.** |
-| **Right: categories** | The 5 most used categories at the top, then every other category A–Z. All subcategories are listed, indented. The order stays fixed for the whole session. Checking a subcategory also checks its parent. **✎ edit** lets you rename, merge, move or delete a category. Every edit first shows how many notes it will rewrite, then updates the whole index and vault. |
+| **Right: categories** | The 5 most used categories at the top, then every other category A–Z. All subcategories are listed, indented. The order stays fixed for the whole session. Checking a subcategory also checks its parent. **✎** (edit mode) lets you rename, merge, move or delete a category. Every edit first shows how many notes it will rewrite, then updates the whole index and vault. |
 
 **Keyboard shortcuts:**
 

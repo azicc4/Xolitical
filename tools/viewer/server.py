@@ -16,6 +16,7 @@ import os
 import re
 import string
 import sys
+import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -277,6 +278,21 @@ class Handler(BaseHTTPRequestHandler):
                 remaining -= len(chunk)
 
 
+class Server(ThreadingHTTPServer):
+    # On Windows, SO_REUSEADDR lets a second process bind a port that is already
+    # in use; disable it there so a busy port fails loudly instead.
+    allow_reuse_address = os.name != "nt"
+
+
+def viewer_running(port):
+    """True if a Xolitical viewer is already answering on this port."""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/state", timeout=2) as r:
+            return "default_vault" in json.loads(r.read().decode("utf-8"))
+    except Exception:
+        return False
+
+
 def main():
     args = sys.argv[1:]
     if "--rebuild" in args:
@@ -294,10 +310,22 @@ def main():
         port = int(args[args.index("--port") + 1])
     if "--state" in args:  # alternate local-state file (used for testing)
         sess.STATE_FILE = Path(args[args.index("--state") + 1])
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://localhost:{port}"
+    open_browser = "--no-open" not in args
+    if viewer_running(port):  # e.g. the launcher was double-clicked again
+        print(f"Xolitical viewer is already running: {url}")
+        if open_browser:
+            webbrowser.open(url)
+        return
+    try:
+        server = Server(("127.0.0.1", port), Handler)
+    except OSError as e:
+        print(f"Port {port} is already used by another program ({e}).")
+        print('Choose a different port in config.json, e.g. {"port": 8490}')
+        sys.exit(1)
     print(f"Xolitical viewer: {url}")
-    if "--no-open" not in args:
+    print("Close this window (or press Ctrl+C) to stop the viewer.")
+    if open_browser:
         try:
             webbrowser.open(url)
         except Exception:

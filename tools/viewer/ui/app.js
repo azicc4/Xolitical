@@ -242,7 +242,7 @@ function renderCounter() {
   const st = S.stats;
   const remaining = S.queue.length;
   $("c-sorted").textContent = (st.sorted_total ?? 0).toLocaleString();
-  $("c-session").textContent = st.sorted_session ? `+${st.sorted_session} this session` : "";
+  $("c-session").textContent = st.sorted_session ? `+${st.sorted_session}` : "";
   $("c-remaining").textContent = remaining.toLocaleString();
   $("c-new").textContent = st.new_since_last == null ? "—" : st.new_since_last.toLocaleString();
   $("c-avg").textContent = st.avg_per_session ?? "—";
@@ -292,13 +292,13 @@ function renderStrip() {
     // back cards first; the newest file sits in front
     files.slice().reverse().forEach((f, j) => {
       const depth = n - 1 - j;                     // 0 = front
-      const x = depth * 8, y = (n - 1 - depth) * 8;
+      const x = depth * 6, y = (n - 1 - depth) * 6;
       const img = document.createElement("img");
       img.className = "card";
       img.loading = "lazy";
       img.src = "/thumb?sha=" + f.sha256;
-      img.style.left = (n === 1 ? 9 : x) + "px";
-      img.style.top = (n === 1 ? 8 : y) + "px";
+      img.style.left = (n === 1 ? 6 : x) + "px";
+      img.style.top = (n === 1 ? 6 : y) + "px";
       img.style.zIndex = String(3 - depth);
       img.onerror = () => {
         const ph = document.createElement("div");
@@ -489,26 +489,25 @@ function addTag(raw) {
   renderTags();
 }
 
+// One chip row: selected tags first (click × to remove), then the 10 most
+// recent tags that aren't selected yet (click to add).
 function renderTags() {
-  const recent = $("tags-recent");
-  recent.dataset.empty = "No recent tags yet";
-  recent.innerHTML = "";
-  S.tagsRecent.slice(0, 10).forEach((t) => {
-    const c = document.createElement("span");
-    c.className = "chip" + (S.selTags.includes(t) ? " on" : "");
-    c.textContent = "#" + t;
-    c.onclick = () => toggleTag(t);
-    recent.appendChild(c);
-  });
-  const sel = $("tags-selected");
-  sel.dataset.empty = S.paired ? "No tags on this event" : "No tags selected (tags are shared by every file in the event)";
-  sel.innerHTML = "";
+  const box = $("tags");
+  box.dataset.empty = "No tags yet. Tags are shared by every file in the event";
+  box.innerHTML = "";
   S.selTags.forEach((t) => {
     const c = document.createElement("span");
     c.className = "chip on";
     c.innerHTML = `#${esc(t)}<span class="x">×</span>`;
     c.onclick = () => toggleTag(t);
-    sel.appendChild(c);
+    box.appendChild(c);
+  });
+  S.tagsRecent.slice(0, 10).filter((t) => !S.selTags.includes(t)).forEach((t) => {
+    const c = document.createElement("span");
+    c.className = "chip";
+    c.textContent = "#" + t;
+    c.onclick = () => toggleTag(t);
+    box.appendChild(c);
   });
 }
 
@@ -594,7 +593,7 @@ function renderCats() {
   list.innerHTML = "";
   list.classList.toggle("editing", S.editing);
   $("cat-edit").classList.toggle("on", S.editing);
-  $("cat-edit").textContent = S.editing ? "✓ done" : "✎ edit";
+  $("cat-edit").textContent = S.editing ? "✓" : "✎";
   const ps = parents();
   if (!ps.length) {
     list.innerHTML = `<p style="color:var(--muted)">No categories yet. Add one below.</p>`;

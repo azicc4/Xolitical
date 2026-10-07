@@ -45,18 +45,18 @@
 <!-- ============================== work screen =============================== -->
 <section id="work" class="work" hidden>
   <aside id="counter" class="counter">
-    <div class="brand">Xolitical</div>
-    <dl>
-      <dt>Sorted</dt><dd><b id="c-sorted">0</b> <small id="c-session"></small></dd>
-      <dt>Remaining</dt><dd><b id="c-remaining">0</b></dd>
-      <dt>New since last</dt><dd id="c-new">—</dd>
-      <dt>Avg / session</dt><dd id="c-avg">—</dd>
-      <dt>Files / min</dt><dd id="c-rate">—</dd>
-      <dt>Time left</dt><dd id="c-eta">—</dd>
-    </dl>
-    <div class="counter-foot">
-      <button id="c-refresh" type="button" title="Recompute averages and re-rank categories">↻ refresh</button>
-      <button id="c-end" type="button" title="End session and pick other folders">⏏ end</button>
+    <div class="counter-head">
+      <span class="brand">Xolitical</span>
+      <button id="c-refresh" type="button" title="Recompute averages and re-rank categories">↻</button>
+      <button id="c-end" type="button" title="End session and pick other folders">⏏</button>
+    </div>
+    <div class="stats">
+      <div title="Files sorted into the vault (all time, +this session)"><b id="c-sorted">0</b><small>sorted <span id="c-session"></span></small></div>
+      <div title="Files still in the origin folder"><b id="c-remaining">0</b><small>left</small></div>
+      <div title="Estimated time to sort the rest, at your files-per-minute rate"><b id="c-eta">—</b><small>time left</small></div>
+      <div title="Files per minute of active sorting (from past sessions)"><b id="c-rate">—</b><small>per min</small></div>
+      <div title="Average files sorted per session"><b id="c-avg">—</b><small>per session</small></div>
+      <div title="Files that arrived in the origin since your last session"><b id="c-new">—</b><small>new</small></div>
     </div>
   </aside>
 
@@ -68,58 +68,60 @@
   </nav>
 
   <main class="center">
-    <div id="viewer" class="viewer"></div>
-    <div class="filemeta">
-      <code id="m-name"></code><span id="m-info"></span>
+    <div class="viewer">
+      <div id="viewer" class="viewer-media"></div>
+      <div class="filemeta"><code id="m-name"></code> <span id="m-info"></span></div>
+      <div id="same-post" class="banner" hidden></div>
     </div>
-    <div id="same-post" class="banner" hidden></div>
 
     <div class="form">
-      <div class="eventrow">
-        <label for="f-event">Event <b class="req">*</b></label>
-        <div class="ac-wrap">
-          <input id="f-event" type="text" autocomplete="off" placeholder="Name this event, or start typing to pair with an existing one">
+      <div class="row eventrow">
+        <label for="f-event">Event<b class="req">*</b></label>
+        <div class="ac-wrap grow">
+          <input id="f-event" type="text" autocomplete="off" placeholder="Name this event, or type to pair with an existing one">
           <div id="ac-events" class="ac" hidden></div>
         </div>
         <span id="pair-state" class="pair-state"></span>
       </div>
 
-      <div class="tagrow">
-        <div id="tags-recent" class="chips" title="10 most recent tags"></div>
-        <div class="ac-wrap">
-          <input id="f-tag" type="text" autocomplete="off" placeholder="Search tags… (Enter adds a new one)">
+      <div class="row tagrow">
+        <div class="ac-wrap tagsearch">
+          <input id="f-tag" type="text" autocomplete="off" placeholder="+ tag (search or new)">
           <div id="ac-tags" class="ac" hidden></div>
         </div>
-        <div id="tags-selected" class="chips selected"></div>
+        <div id="tags" class="chips" title="Selected tags (×) followed by your most recent tags"></div>
       </div>
 
-      <textarea id="f-note" rows="2" placeholder="Note for this file only (not shared with paired files)"></textarea>
-
-      <details id="details" class="details">
-        <summary>Details: <span id="d-summary"></span></summary>
-        <div class="grid">
-          <label>Source URL <input id="f-source" type="url" placeholder="https://… (required when one exists)"></label>
-          <label>Account <input id="f-account" type="text"></label>
-          <label>Posted <input id="f-posted" type="date"></label>
-          <label>Platform
-            <select id="f-platform">
-              <option>twitter</option><option>instagram</option><option>youtube</option>
-              <option>substack</option><option>other</option>
-            </select>
-          </label>
-          <label>Type
-            <select id="f-type">
-              <option>image</option><option>video</option><option>pdf</option><option>text</option><option>other</option>
-            </select>
-          </label>
+      <div class="row noterow">
+        <textarea id="f-note" rows="1" placeholder="Note for this file only (not shared with paired files)"></textarea>
+        <div class="actions">
+          <button id="b-save" class="primary" type="button" title="Ctrl+Enter">Save → vault</button>
+          <button id="b-skip" type="button" title="Alt+S">Skip</button>
+          <button id="b-dupe" class="danger" type="button" title="Move to origin/_duplicates">Duplicate</button>
+          <button id="b-undo" type="button" title="Alt+Z — undo the last save">Undo</button>
         </div>
-      </details>
+      </div>
 
-      <div class="actions">
-        <button id="b-save" class="primary" type="button" title="Ctrl+Enter">Save → vault</button>
-        <button id="b-skip" type="button" title="Alt+S">Skip</button>
-        <button id="b-dupe" class="danger" type="button" title="Move to origin/_duplicates">Duplicate</button>
-        <button id="b-undo" type="button" title="Alt+Z — undo the last save">Undo</button>
+      <div class="row metarow">
+        <details id="details" class="details">
+          <summary>Details: <span id="d-summary"></span></summary>
+          <div class="grid">
+            <label>Source URL <input id="f-source" type="url" placeholder="https://… (required when one exists)"></label>
+            <label>Account <input id="f-account" type="text"></label>
+            <label>Posted <input id="f-posted" type="date"></label>
+            <label>Platform
+              <select id="f-platform">
+                <option>twitter</option><option>instagram</option><option>youtube</option>
+                <option>substack</option><option>other</option>
+              </select>
+            </label>
+            <label>Type
+              <select id="f-type">
+                <option>image</option><option>video</option><option>pdf</option><option>text</option><option>other</option>
+              </select>
+            </label>
+          </div>
+        </details>
         <span id="status" class="status"></span>
       </div>
     </div>
@@ -128,7 +130,7 @@
   <aside class="cats">
     <div class="cats-head">
       <input id="cat-filter" type="text" placeholder="Filter categories…" autocomplete="off">
-      <button id="cat-edit" type="button" title="Rename, merge, move or delete categories">✎ edit</button>
+      <button id="cat-edit" type="button" title="Rename, merge, move or delete categories">✎</button>
     </div>
     <div id="cat-list" class="cat-list"></div>
     <div class="cat-add">
