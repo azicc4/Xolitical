@@ -1,0 +1,32 @@
+filters:
+  and:
+    - file.inFolder("Events")
+    - file.hasLink(this.file)
+properties:
+  note.file_count:
+    displayName: Files
+  note.date:
+    displayName: Date
+views:
+  - type: cards
+    name: Gallery
+    image: note.cover
+    order:
+      - file.name
+      - note.date
+      - note.file_count
+    sort:
+      - property: note.date
+        direction: DESC
+  - type: table
+    name: Table
+    order:
+      - file.name
+      - note.date
+      - note.subcategories
+      - note.tags
+      - note.file_count
+      - note.added_by
+    sort:
+      - property: note.date
+        direction: DESC

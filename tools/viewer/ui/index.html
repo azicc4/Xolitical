@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xolitical Viewer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================== start screen ============================== -->
+<section id="start" class="start" hidden>
+  <div class="start-card">
+    <h1>Xolitical <span>viewer</span></h1>
+    <p class="lede">Sort media from an <b>origin</b> folder (where your downloads land) into an Obsidian <b>vault</b>. Each save moves the file into the vault's <code>_media/</code> folder, so no copies are left behind.</p>
+
+    <label class="field">Your alias <small>stamped on everything you add</small>
+      <input id="s-alias" type="text" placeholder="e.g. adam" autocomplete="off">
+    </label>
+
+    <label class="field">Origin folder <small>unsorted media, searched recursively</small>
+      <div class="pathrow">
+        <input id="s-origin" type="text" placeholder="C:\Users\you\Downloads\XMedia" spellcheck="false">
+        <button type="button" data-browse="s-origin">Browse…</button>
+      </div>
+    </label>
+
+    <label class="field">Destination vault <small>the Obsidian vault folder</small>
+      <div class="pathrow">
+        <input id="s-vault" type="text" spellcheck="false">
+        <button type="button" data-browse="s-vault">Browse…</button>
+      </div>
+    </label>
+
+    <div id="s-recent" class="recent"></div>
+    <div id="s-summary" class="summary"></div>
+
+    <div class="actions">
+      <button id="s-init" type="button" hidden>Initialize vault here</button>
+      <button id="s-begin" type="button" class="primary" disabled>Begin session</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== work screen =============================== -->
+<section id="work" class="work" hidden>
+  <aside id="counter" class="counter">
+    <div class="brand">Xolitical</div>
+    <dl>
+      <dt>Sorted</dt><dd><b id="c-sorted">0</b> <small id="c-session"></small></dd>
+      <dt>Remaining</dt><dd><b id="c-remaining">0</b></dd>
+      <dt>New since last</dt><dd id="c-new">—</dd>
+      <dt>Avg / session</dt><dd id="c-avg">—</dd>
+      <dt>Files / min</dt><dd id="c-rate">—</dd>
+      <dt>Time left</dt><dd id="c-eta">—</dd>
+    </dl>
+    <div class="counter-foot">
+      <button id="c-refresh" type="button" title="Recompute averages and re-rank categories">↻ refresh</button>
+      <button id="c-end" type="button" title="End session and pick other folders">⏏ end</button>
+    </div>
+  </aside>
+
+  <nav class="strip">
+    <button id="strip-prev" class="arrow" type="button" title="Newer events (Alt+←)">◀</button>
+    <div id="strip" class="strip-cards"></div>
+    <button id="strip-next" class="arrow" type="button" title="Older events (Alt+→)">▶</button>
+    <div id="strip-page" class="strip-page"></div>
+  </nav>
+
+  <main class="center">
+    <div id="viewer" class="viewer"></div>
+    <div class="filemeta">
+      <code id="m-name"></code><span id="m-info"></span>
+    </div>
+    <div id="same-post" class="banner" hidden></div>
+
+    <div class="form">
+      <div class="eventrow">
+        <label for="f-event">Event <b class="req">*</b></label>
+        <div class="ac-wrap">
+          <input id="f-event" type="text" autocomplete="off" placeholder="Name this event, or start typing to pair with an existing one">
+          <div id="ac-events" class="ac" hidden></div>
+        </div>
+        <span id="pair-state" class="pair-state"></span>
+      </div>
+
+      <div class="tagrow">
+        <div id="tags-recent" class="chips" title="10 most recent tags"></div>
+        <div class="ac-wrap">
+          <input id="f-tag" type="text" autocomplete="off" placeholder="Search tags… (Enter adds a new one)">
+          <div id="ac-tags" class="ac" hidden></div>
+        </div>
+        <div id="tags-selected" class="chips selected"></div>
+      </div>
+
+      <textarea id="f-note" rows="2" placeholder="Note for this file only (not shared with paired files)"></textarea>
+
+      <details id="details" class="details">
+        <summary>Details: <span id="d-summary"></span></summary>
+        <div class="grid">
+          <label>Source URL <input id="f-source" type="url" placeholder="https://… (required when one exists)"></label>
+          <label>Account <input id="f-account" type="text"></label>
+          <label>Posted <input id="f-posted" type="date"></label>
+          <label>Platform
+            <select id="f-platform">
+              <option>twitter</option><option>instagram</option><option>youtube</option>
+              <option>substack</option><option>other</option>
+            </select>
+          </label>
+          <label>Type
+            <select id="f-type">
+              <option>image</option><option>video</option><option>pdf</option><option>text</option><option>other</option>
+            </select>
+          </label>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button id="b-save" class="primary" type="button" title="Ctrl+Enter">Save → vault</button>
+        <button id="b-skip" type="button" title="Alt+S">Skip</button>
+        <button id="b-dupe" class="danger" type="button" title="Move to origin/_duplicates">Duplicate</button>
+        <button id="b-undo" type="button" title="Alt+Z — undo the last save">Undo</button>
+        <span id="status" class="status"></span>
+      </div>
+    </div>
+  </main>
+
+  <aside class="cats">
+    <div class="cats-head">
+      <input id="cat-filter" type="text" placeholder="Filter categories…" autocomplete="off">
+      <button id="cat-edit" type="button" title="Rename, merge, move or delete categories">✎ edit</button>
+    </div>
+    <div id="cat-list" class="cat-list"></div>
+    <div class="cat-add">
+      <input id="cat-new" type="text" placeholder="+ new category" autocomplete="off">
+    </div>
+  </aside>
+</section>
+
+<div id="empty" class="empty" hidden>
+  <h1>Origin is empty 🎉</h1>
+  <p>Everything in <code id="empty-path"></code> has been sorted.</p>
+  <button id="empty-end" type="button">Back to start</button>
+</div>
+
+<!-- ================================ dialogs ================================= -->
+<dialog id="dlg-browse" class="dlg">
+  <h2>Choose a folder</h2>
+  <div class="browse-path"><button id="br-up" type="button">↑ up</button><code id="br-path"></code></div>
+  <div id="br-list" class="browse-list"></div>
+  <div class="actions">
+    <button id="br-choose" class="primary" type="button">Use this folder</button>
+    <button id="br-cancel" type="button">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="dlg" class="dlg">
+  <h2 id="dlg-title"></h2>
+  <div id="dlg-body"></div>
+  <div id="dlg-actions" class="actions"></div>
+</dialog>
+
+<div id="tooltip" class="tooltip" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

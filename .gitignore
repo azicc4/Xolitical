@@ -1,13 +1,20 @@
 # Per-user config (copy config.example.json -> config.json)
 config.json
 
-# Incoming media awaiting triage (local only)
-unsorted/
+# Media never enters git: it lives in each machine's vault/_media/ (moved there
+# from your origin folder by the viewer). Notes + index are committed instead;
+# every file's source URL lets collaborators re-fetch the original.
+vault/_media/
 
-# Actual media files: metadata lives in git, media stays local.
-# Re-fetch via each note's `source` URL.
-vault/_assets/*
-!vault/_assets/.gitkeep
+# Local-only viewer cache (thumbnails)
+vault/.xolitical/cache/
+
+# Atomic-write temp files
+*.tmp
+*.partial
+
+# Legacy Phase 1 inbox, if you still have one locally
+unsorted/
 
 # Per-user Obsidian state (shared vault config IS committed)
 vault/.obsidian/workspace.json

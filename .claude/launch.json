@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "triage",
+      "name": "viewer",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["tools/triage/server.py", "--no-open"],
+      "runtimeArgs": ["tools/viewer/server.py", "--no-open"],
       "port": 8484
     }
   ]

@@ -1,7 +1,10 @@
 {
-  "attachmentFolderPath": "_assets",
+  "attachmentFolderPath": "_media",
   "alwaysUpdateLinks": true,
   "newLinkFormat": "relative",
   "useMarkdownLinks": false,
-  "showUnsupportedFiles": true
+  "showUnsupportedFiles": true,
+  "userIgnoreFilters": [
+    "_media/"
+  ]
 }

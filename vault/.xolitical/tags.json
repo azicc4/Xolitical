@@ -1,0 +1,19 @@
+{
+  "_comment": "Seed tag vocabulary. Tags used on events are added automatically.",
+  "tags": [
+    "big-tech",
+    "censorship",
+    "civil-liberties",
+    "climate",
+    "corruption",
+    "covid",
+    "economy",
+    "elections",
+    "foreign-policy",
+    "healthcare",
+    "immigration",
+    "media-criticism",
+    "needs-review",
+    "science"
+  ]
+}
