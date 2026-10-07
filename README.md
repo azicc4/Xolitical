@@ -15,7 +15,7 @@ Xolitical/                    this repo (can live anywhere, e.g. later on a port
   tools/viewer/               the viewer (Python standard library only)
   vault/                      ← open this folder in Obsidian
     Home.md                   dashboard
-    Events/<year>/            one note per event: category links at the top, then each file with its own note
+    Events/<year>/            one note per event: category links, a gallery of its media, then each file's link + note
     Categories/               one note per category and subcategory; each lists its events
     Papers/                   scientific papers and primary sources
     .xolitical/               the index: relational tables (JSONL), committed to git
@@ -34,7 +34,7 @@ Requirements: [Python 3.9+](https://www.python.org/downloads/) and [Obsidian](ht
 2. Start the viewer:
    - **Windows:** double-click **`Start Xolitical Viewer.bat`** in the repo folder.
      - It finds Python, starts the viewer in a minimized window and opens `http://localhost:8484` in your browser.
-     - Double-clicking it again while the viewer is running just reopens the tab.
+     - **Every double-click restarts the viewer** on the current code. Run it again after pulling updates. Nothing is lost, because every save is written to disk immediately. A tab left open from before a restart returns to the start screen by itself.
      - To stop the viewer, close the minimized "Xolitical Viewer" window.
      - To pin it to the desktop or taskbar, right-click the file and choose *Send to › Desktop (create shortcut)*.
    - **Any OS, from a terminal:**
@@ -74,11 +74,31 @@ Requirements: [Python 3.9+](https://www.python.org/downloads/) and [Obsidian](ht
 | Alt+← / Alt+→ | Page through the strip |
 | P | Pair with the event that already holds a file from the same post |
 
+**File types.** `.jfif` images (and other JPEG aliases) are saved into the vault as `.jpg` so Obsidian can show them.
+- This is a rename only: a `.jfif` is already a JPEG, so the bytes are never re-encoded.
+- The file's content is checked first. A file that is really a PNG, WebP or GIF gets that extension instead. An unrecognized or damaged file keeps its name.
+- The moved file's SHA-256 must match the original, or the save is undone.
+- The original filename is kept in the index (`original_name`).
+
 **Duplicates:**
 - A file with the same bytes as one already in the vault is offered a move to `<origin>/_duplicates/`.
 - A file with the same post URL but different bytes is offered pairing with that post's event instead. This is usually the second image of a multi-image tweet.
 
 **Autosave.** Every save writes the index and the event note immediately. There is no batching, so nothing is lost if the window closes.
+
+## In Obsidian
+
+- **Gallery.** Every event note opens with a **Gallery** of all its images and videos. The images are laid out in columns at their own shape, with no cropping. This uses the `xolitical` CSS snippet, which the viewer installs and switches on (Settings → Appearance → CSS snippets).
+- **Full size.** Below the gallery, each file is listed as a link with its source and note. Click a link to open the file full size.
+- **Optional plugin:** the community plugin **Image Toolkit** adds click-to-enlarge, zoom and arrow-key browsing to gallery images.
+
+## Fixing older files
+
+Vaults sorted before `.jfif` handling existed can be fixed in one step. It renames the files, with the same content and SHA-256 checks, and updates the index and notes. It is safe to re-run. On a collaborator's machine it also renames their local copies to match.
+
+```bash
+python tools/viewer/server.py --fix-extensions
+```
 
 ## Rebuilding the vault
 

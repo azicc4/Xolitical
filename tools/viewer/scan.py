@@ -5,11 +5,17 @@ import os
 import re
 import shutil
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif", ".jfif"}
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".avif",
+              ".jfif", ".jfi", ".jpe", ".pjpeg"}
+# Extensions that are JPEG under another name; Obsidian can't display them.
+JPEG_ALIASES = {".jfif", ".jfi", ".jpe", ".pjpeg"}
+# What each sniffed format accepts as a correct extension.
+KIND_EXTS = {"jpg": {".jpg", ".jpeg"}, "png": {".png"}, "gif": {".gif"}, "webp": {".webp"}}
 VIDEO_EXTS = {".mp4", ".webm", ".mov", ".mkv", ".m4v"}
 DOC_EXTS = {".pdf", ".txt"}
 MEDIA_EXTS = IMAGE_EXTS | VIDEO_EXTS | DOC_EXTS
@@ -38,6 +44,59 @@ def media_type_for(ext):
     if ext == ".txt":
         return "text"
     return "other"
+
+
+def sniff_image(path):
+    """The real image format from the file's first bytes, or None if unrecognized."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(12)
+    except OSError:
+        return None
+    if head.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if head.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if head[:6] in (b"GIF87a", b"GIF89a"):
+        return "gif"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
+def decodes(path):
+    """True if Pillow can decode the image (also True when Pillow isn't installed)."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return True
+    try:
+        with Image.open(path) as im:
+            im.verify()
+        return True
+    except Exception:
+        return False
+
+
+def normalized_name(name, path):
+    """Filename with an extension Obsidian can display, decided by the file's content.
+
+    `.jfif` and other JPEG aliases become `.jpg`; an image whose bytes contradict its
+    extension (e.g. a PNG saved as .jpg) gets the right one. Only the name changes,
+    never the bytes. Unrecognized or undecodable content keeps its original name.
+    """
+    stem, ext = os.path.splitext(name)
+    ext = ext.lower()
+    if ext not in IMAGE_EXTS:
+        return name
+    kind = sniff_image(path)
+    if not kind or ext in KIND_EXTS[kind]:
+        return name
+    if ext not in JPEG_ALIASES and ext not in {e for exts in KIND_EXTS.values() for e in exts}:
+        return name  # e.g. .bmp/.avif: we don't second-guess formats we can't sniff
+    if not decodes(path):
+        return name
+    return f"{stem}.{kind}"
 
 
 def normalize_source(url):
@@ -244,15 +303,24 @@ def move_file(src: Path, dest: Path):
     Same drive: an atomic rename. Across drives: copy, verify size, then delete.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        os.rename(src, dest)
-        return
-    except OSError:
-        pass  # different volume (or rename refused) — fall back to copy
+    # Windows refuses to rename a file another handle has open (a video still
+    # streaming to the preview, a background hash). Such locks are brief: retry.
+    for _ in range(20):
+        try:
+            os.rename(src, dest)
+            return
+        except PermissionError:
+            time.sleep(0.15)
+        except OSError:
+            break  # different volume — fall back to copy
     tmp = dest.with_name(dest.name + ".partial")
     shutil.copy2(src, tmp)
     if tmp.stat().st_size != src.stat().st_size:
         tmp.unlink(missing_ok=True)
         raise OSError(f"copy of {src.name} is incomplete; original left in place")
     os.replace(tmp, dest)
-    os.remove(src)
+    try:
+        os.remove(src)
+    except OSError:
+        dest.unlink(missing_ok=True)  # couldn't remove the original: undo the copy
+        raise

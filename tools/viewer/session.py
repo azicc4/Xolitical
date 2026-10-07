@@ -106,6 +106,7 @@ class Session:
         self.alias = alias.strip() or "anonymous"
         self.lock = threading.RLock()
         self.index = Index(self.vault)
+        vaultgen.scaffold(self.vault)  # keeps the gallery stylesheet current in older vaults
         self.gen = vaultgen.VaultGen(self.vault, self.index)
         self.thumbs = Thumbs(self.vault)
         self.hasher = scan.Hasher()
@@ -226,7 +227,8 @@ class Session:
             platform = vaultgen.safe_name(body.get("platform") or item.get("platform") or "other").lower()
             posted = (body.get("posted") or "").strip()
             month = (posted or item.get("created_iso") or now_iso())[:7]
-            fname = LINK_UNSAFE.sub("-", src.name)
+            # .jfif etc. -> .jpg (name only; the bytes never change), decided by content
+            fname = LINK_UNSAFE.sub("-", scan.normalized_name(src.name, src))
             if self.index.name_taken(fname):
                 fname = f"{Path(fname).stem}-{sha[:8]}{Path(fname).suffix}"
             dest = scan.unique_path(self.vault / vaultgen.MEDIA_DIR / platform / month / fname, extra=sha[:8])
@@ -235,6 +237,12 @@ class Session:
             except OSError as e:
                 self._rollback_event(eid, snapshot)
                 return {"status": "error", "error": f"could not move file: {e}"}
+            if scan.sha256_file(dest) != sha:  # proof the vault copy is byte-identical
+                try:
+                    scan.move_file(dest, src)
+                finally:
+                    self._rollback_event(eid, snapshot)
+                return {"status": "error", "error": "file changed while moving; it was put back in the origin"}
 
             self.index.add_file({
                 "sha256": sha, "name": dest.name, "size": dest.stat().st_size,
@@ -244,6 +252,7 @@ class Session:
                 "type": body.get("type") or item.get("type") or "other",
                 "note": (body.get("note") or "").strip(), "added_by": self.alias,
                 "sorted_at": now_iso(),
+                "original_name": src.name if dest.name != src.name else None,
             })
             now = time.time()
             gap = now - self.last_activity
@@ -445,6 +454,58 @@ class Session:
 
 def rebuild(vault):
     v = Path(vault).expanduser().resolve()
+    vaultgen.scaffold(v)
     idx = Index(v)
     gen = vaultgen.VaultGen(v, idx)
     return gen.rebuild_all()
+
+
+def fix_extensions(vault):
+    """One-time fix for media already in the vault: give .jfif (and mislabeled)
+    images an extension Obsidian can display. Renames only; each file's SHA-256 is
+    checked after the rename. Safe to re-run. On a collaborator's machine it also
+    renames local copies that still carry the old name the shared index recorded."""
+    v = Path(vault).expanduser().resolve()
+    vaultgen.scaffold(v)
+    idx = Index(v)
+    gen = vaultgen.VaultGen(v, idx)
+    report = {"renamed": [], "failed": [], "missing": []}
+    mapping, events = {}, set()
+    for r in [dict(x) for x in idx.db.execute("SELECT * FROM files ORDER BY sha256")]:
+        sha, cur = r["sha256"], v / r["path"]
+        if not cur.exists():
+            old_local = cur.with_name(r["original_name"]) if r["original_name"] else None
+            if old_local and old_local.exists() and scan.sha256_file(old_local) == sha:
+                scan.move_file(old_local, cur)
+                report["renamed"].append(f"{old_local.name} -> {cur.name} (local copy)")
+            else:
+                report["missing"].append(r["path"])
+            continue
+        new = LINK_UNSAFE.sub("-", scan.normalized_name(r["name"], cur))
+        if new == r["name"]:
+            continue
+        if idx.name_taken(new):
+            new = f"{Path(new).stem}-{sha[:8]}{Path(new).suffix}"
+        dest = scan.unique_path(cur.with_name(new), extra=sha[:8])
+        try:
+            scan.move_file(cur, dest)
+        except OSError as e:
+            report["failed"].append(f"{r['name']}: {e}")
+            continue
+        if scan.sha256_file(dest) != sha:
+            scan.move_file(dest, cur)
+            report["failed"].append(f"{r['name']}: content changed during rename; left as is")
+            continue
+        idx.db.execute("UPDATE files SET name=?, path=?, original_name=? WHERE sha256=?",
+                       (dest.name, dest.relative_to(v).as_posix(), r["original_name"] or r["name"], sha))
+        idx.mark("files:" + sha[0])
+        mapping[r["name"]] = dest.name
+        events.add(r["event_id"])
+        report["renamed"].append(f"{r['name']} -> {dest.name}")
+    idx.flush()
+    gen.rewrite_names(mapping)  # references in hand-written text below the end marker
+    paths = gen.event_paths()
+    for eid in events:
+        if eid in paths:
+            gen.write_event(eid, paths)
+    return report

@@ -86,6 +86,8 @@ small { color: var(--muted); font-weight: normal; }
 
 /* event strip */
 .strip { grid-column: 2 / 4; grid-row: 1; display: flex; align-items: stretch; gap: 4px; padding: 4px 6px; position: relative; }
+/* second Save button, beside the stats, so saving needs less mouse travel */
+.strip .save-top { align-self: center; height: 56px; padding: 0 12px; font-size: 12.5px; line-height: 1.2; white-space: nowrap; }
 .strip .arrow { padding: 0 6px; font-size: 13px; align-self: center; height: 56px; }
 .strip-cards { flex: 1; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; min-width: 0; }
 .strip-page { position: absolute; right: 8px; bottom: 1px; font-size: 10px; color: var(--muted); }

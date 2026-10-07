@@ -26,6 +26,8 @@ async function api(url, body) {
   };
   const res = await fetch(url, opts);
   const out = await res.json().catch(() => ({ status: "error", error: `HTTP ${res.status}` }));
+  // The viewer was restarted under this tab: go back to the start screen.
+  if (res.status === 409 && !$("work").hidden) location.reload();
   return out;
 }
 
@@ -710,6 +712,15 @@ function resetForm() {
   closeAc("ac-events"); closeAc("ac-tags");
 }
 
+// Stop a playing video and drop its connection so the server can move the file
+// (Windows won't rename a file that is still being streamed).
+function releaseMedia() {
+  const m = document.querySelector("#viewer video, #viewer img, #viewer embed");
+  if (!m) return;
+  if (m.tagName === "VIDEO") { m.pause(); m.removeAttribute("src"); m.load(); }
+  else m.removeAttribute("src");
+}
+
 function renderViewer(item) {
   const box = $("viewer");
   box.innerHTML = "";
@@ -838,9 +849,12 @@ async function save(force = false) {
     force,
   };
   setStatus("Saving…");
-  $("b-save").disabled = true;
+  releaseMedia();
+  const saveBtns = [$("b-save"), $("b-save-top")];
+  saveBtns.forEach((b) => { b.disabled = true; });
   let r;
-  try { r = await api("/api/save", body); } finally { $("b-save").disabled = false; }
+  try { r = await api("/api/save", body); } finally { saveBtns.forEach((b) => { b.disabled = false; }); }
+  if (r.status !== "saved" && current() === item) renderViewer(item);  // file stayed: show it again
 
   if (r.status === "duplicate") {
     const v = await dialog({
@@ -882,7 +896,9 @@ async function save(force = false) {
 async function markDuplicate() {
   const item = current();
   if (!item) return;
+  releaseMedia();
   const r = await api("/api/duplicate", { path: item.path });
+  if (r.status !== "moved") renderViewer(item);
   if (r.status !== "moved") return setStatus(r.error || "Move failed.", "err");
   S.queue.shift();
   S.stats = r.stats;
@@ -925,6 +941,7 @@ async function undo() {
 }
 
 $("b-save").onclick = () => save(false);
+$("b-save-top").onclick = () => save(false);  // same action, placed by the strip
 $("b-skip").onclick = skip;
 $("b-dupe").onclick = markDuplicate;
 $("b-undo").onclick = undo;

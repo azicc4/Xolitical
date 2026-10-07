@@ -1,8 +1,9 @@
 @echo off
 rem ---------------------------------------------------------------------------
-rem  Xolitical Viewer launcher - double-click to start.
-rem  Finds Python 3.9+, starts the viewer in a minimized window, and opens it
-rem  in your browser. Double-clicking again while it runs just reopens the tab.
+rem  Xolitical Viewer launcher - double-click to start (or restart).
+rem  Every run stops any viewer that is already running and starts a fresh one,
+rem  so the viewer always runs the current code. Nothing is lost: every save is
+rem  written to disk the moment you make it.
 rem  To stop the viewer, close the minimized "Xolitical Viewer" window.
 rem ---------------------------------------------------------------------------
 setlocal
@@ -30,6 +31,15 @@ if not defined PYEXE (
   exit /b 1
 )
 
-echo Starting the Xolitical viewer - your browser will open in a moment...
+echo Restarting the Xolitical viewer - your browser will open in a moment...
+
+rem 1. Ask a running viewer to save its session and shut down.
+"%PYEXE%" %PYARGS% "%SERVER%" --stop >nul 2>nul
+
+rem 2. Stop anything still running from this folder (e.g. a viewer from an older
+rem    version, or a leftover window), so only current code runs.
+powershell -NoProfile -Command "$s = $env:SERVER.ToLower(); Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -and $_.CommandLine.ToLower().Contains($s) -and $_.CommandLine -notmatch '--rebuild' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }" >nul 2>nul
+
+rem 3. Start the viewer in a minimized window.
 start "Xolitical Viewer - close this window to stop it" /min cmd /c ""%PYEXE%" %PYARGS% "%SERVER%" || pause"
 exit /b 0

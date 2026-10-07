@@ -6,6 +6,10 @@ Python standard library only (Pillow / ffmpeg are used for thumbnails if present
 Usage:
     python tools/viewer/server.py [--no-open] [--port N]
     python tools/viewer/server.py --rebuild [VAULT]   # regenerate every note from the index
+    python tools/viewer/server.py --stop              # stop a running viewer
+    python tools/viewer/server.py --fix-extensions [VAULT]  # .jfif etc. -> .jpg (rename only, hash-checked)
+
+Starting the viewer while one is already running restarts it on the current code.
 
 Then open http://localhost:8484 (opens automatically unless --no-open).
 """
@@ -16,6 +20,8 @@ import os
 import re
 import string
 import sys
+import threading
+import time
 import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -129,6 +135,9 @@ class Handler(BaseHTTPRequestHandler):
 
     # --------------------------------------------------------------- GET
     def do_GET(self):
+        if not self.from_this_app():
+            self.send_json({"status": "error", "error": "forbidden"}, 403)
+            return
         parsed = urlparse(self.path)
         route, q = parsed.path, parse_qs(parsed.query)
         arg = lambda k: q.get(k, [""])[0]
@@ -175,13 +184,34 @@ class Handler(BaseHTTPRequestHandler):
 
         self.guarded(run)
 
+    def from_this_app(self):
+        """Reject requests a web page on another site could forge (all POSTs move
+        files or rewrite notes): the Host must be this machine and POSTs must be
+        JSON, which browsers won't send cross-site without a CORS preflight."""
+        port = self.server.server_address[1]
+        if self.headers.get("Host", "") not in (f"localhost:{port}", f"127.0.0.1:{port}"):
+            return False
+        if self.command == "POST":
+            return self.headers.get("Content-Type", "").startswith("application/json")
+        return True
+
     # -------------------------------------------------------------- POST
     def do_POST(self):
         route = urlparse(self.path).path
+        if not self.from_this_app():
+            self.send_json({"status": "error", "error": "forbidden"}, 403)
+            return
 
         def run():
             body = self.read_body()
-            if route == "/api/browse":
+            if route == "/api/shutdown":  # used by the launcher to restart on new code
+                s = CURRENT["session"]
+                if s:
+                    s.end()
+                CURRENT["session"] = None
+                self.send_json({"status": "ok"})
+                threading.Thread(target=self.server.shutdown, daemon=True).start()
+            elif route == "/api/browse":
                 self.send_json(list_dirs(body.get("path", "")))
             elif route == "/api/inspect":
                 self.send_json(sess.inspect(body.get("origin"), body.get("vault")))
@@ -293,8 +323,38 @@ def viewer_running(port):
         return False
 
 
+def stop_running(port, timeout=4):
+    """Ask a viewer running on this port to shut down cleanly (it saves its
+    session first). Returns True once nothing is answering on the port."""
+    if not viewer_running(port):
+        return True
+    req = urllib.request.Request(f"http://127.0.0.1:{port}/api/shutdown", data=b"{}", method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(req, timeout=3).read()
+    except Exception:
+        pass  # older viewers have no shutdown endpoint; the launcher stops those itself
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if not viewer_running(port):
+            return True
+        time.sleep(0.25)
+    return False
+
+
 def main():
     args = sys.argv[1:]
+    if "--fix-extensions" in args:
+        i = args.index("--fix-extensions")
+        vault = args[i + 1] if i + 1 < len(args) and not args[i + 1].startswith("--") else str(DEFAULT_VAULT)
+        rep = sess.fix_extensions(vault)
+        for line in rep["renamed"]:
+            print("renamed  ", line)
+        for line in rep["failed"]:
+            print("FAILED   ", line)
+        print(f"{len(rep['renamed'])} renamed, {len(rep['failed'])} failed, "
+              f"{len(rep['missing'])} indexed files not on this machine")
+        return
     if "--rebuild" in args:
         i = args.index("--rebuild")
         vault = args[i + 1] if i + 1 < len(args) and not args[i + 1].startswith("--") else str(DEFAULT_VAULT)
@@ -312,11 +372,17 @@ def main():
         sess.STATE_FILE = Path(args[args.index("--state") + 1])
     url = f"http://localhost:{port}"
     open_browser = "--no-open" not in args
-    if viewer_running(port):  # e.g. the launcher was double-clicked again
-        print(f"Xolitical viewer is already running: {url}")
-        if open_browser:
-            webbrowser.open(url)
+    if "--stop" in args:
+        stopped = stop_running(port)
+        print("Stopped the running viewer." if stopped else f"A viewer on port {port} did not stop.")
         return
+    # Starting always replaces a viewer that's already running, so the latest
+    # code is what serves the page. Progress is safe: every save is on disk.
+    if viewer_running(port):
+        print("Restarting: stopping the viewer that is already running...")
+        if not stop_running(port):
+            print(f"An older viewer on port {port} would not stop. Close its window and try again.")
+            sys.exit(1)
     try:
         server = Server(("127.0.0.1", port), Handler)
     except OSError as e:
@@ -331,12 +397,14 @@ def main():
         except Exception:
             pass
     try:
-        server.serve_forever()
+        server.serve_forever()  # returns after /api/shutdown
     except KeyboardInterrupt:
         s = CURRENT["session"]
         if s:
             s.end()
         print("\nbye")
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":

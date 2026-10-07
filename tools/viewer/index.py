@@ -36,7 +36,7 @@ CREATE TABLE event_tags(
 CREATE TABLE files(
     sha256 TEXT PRIMARY KEY, name TEXT, size INTEGER, path TEXT, event_id TEXT,
     source TEXT, source_norm TEXT, platform TEXT, account TEXT, posted TEXT,
-    type TEXT, note TEXT, added_by TEXT, sorted_at TEXT);
+    type TEXT, note TEXT, added_by TEXT, sorted_at TEXT, original_name TEXT);
 CREATE INDEX files_event ON files(event_id);
 CREATE INDEX files_source ON files(source_norm);
 CREATE INDEX files_name ON files(name COLLATE NOCASE);
@@ -47,7 +47,7 @@ CREATE TABLE sessions(
 """
 
 FILE_FIELDS = ["sha256", "name", "size", "path", "event", "source", "platform",
-               "account", "posted", "type", "note", "added_by", "sorted_at"]
+               "account", "posted", "type", "note", "added_by", "sorted_at", "original_name"]
 
 DEFAULT_TAGS = ["needs-review"]
 
@@ -147,11 +147,11 @@ class Index:
 
     def _insert_file(self, r):
         self.db.execute(
-            "INSERT OR REPLACE INTO files VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT OR REPLACE INTO files VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (r["sha256"], r.get("name"), r.get("size"), r.get("path"), r.get("event"),
              r.get("source", ""), normalize_source(r.get("source", "")), r.get("platform", ""),
              r.get("account", ""), r.get("posted", ""), r.get("type", ""), r.get("note", ""),
-             r.get("added_by", ""), r.get("sorted_at", "")))
+             r.get("added_by", ""), r.get("sorted_at", ""), r.get("original_name")))
 
     def flush(self):
         """Write every dirty table back to disk (atomic per file)."""
@@ -197,7 +197,10 @@ class Index:
         d = dict(r)
         d["event"] = d.pop("event_id")
         d.pop("source_norm", None)
-        return {k: d.get(k) for k in FILE_FIELDS}
+        row = {k: d.get(k) for k in FILE_FIELDS}
+        if not row["original_name"]:  # only recorded when the viewer renamed the file
+            del row["original_name"]
+        return row
 
     # ----------------------------------------------------------- categories
     def category(self, cid):
