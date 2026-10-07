@@ -64,7 +64,9 @@ def inspect(origin, vault):
     v = Path(vault).expanduser() if vault else None
     if not o or not o.is_dir():
         out["origin"]["error"] = "Origin folder not found."
-    if not v or not v.is_dir():
+    # A vault folder that doesn't exist yet is fine (e.g. a fresh clone, where the
+    # gitignored vault/ is absent): "Initialize vault here" creates it.
+    if not v or not (v.is_dir() or (not v.exists() and v.parent.is_dir())):
         out["vault"]["error"] = "Vault folder not found."
     if out["origin"].get("error") or out["vault"].get("error"):
         return out
@@ -81,7 +83,7 @@ def inspect(origin, vault):
         "count": len(items),
         "new_since_last": sum(1 for it in items if last_end and it["created"] > last_end) if last_end else None,
     }
-    out["vault"] = {"path": str(v), "initialized": is_initialized(v)}
+    out["vault"] = {"path": str(v), "initialized": is_initialized(v), "exists": v.is_dir()}
     if out["vault"]["initialized"]:
         idx = Index(v)
         out["vault"].update(files=idx.file_count(), events=idx.event_count(),

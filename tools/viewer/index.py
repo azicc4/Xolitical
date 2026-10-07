@@ -1,6 +1,6 @@
 """Relational index for a Xolitical vault.
 
-On disk (committed to git):  <vault>/.xolitical/
+On disk (local to the vault; gitignored with the rest of vault/):  <vault>/.xolitical/
     categories.jsonl   one row per category / subcategory
     events.jsonl       one row per named event (group of paired files)
     files/<0-f>.jsonl  one row per sorted media file, sharded by sha256[0]

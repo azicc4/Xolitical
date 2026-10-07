@@ -1,40 +1,26 @@
 # Contributing to Xolitical
 
+This repository holds the **viewer program** only (`tools/viewer/`, the launcher and the docs). Each person's vault (media, index, notes, Obsidian settings) is local to their machine and gitignored: `vault/` never enters git.
+
 ## Setup
 
 1. Clone (or fork) the repo.
-2. Run `python tools/viewer/server.py`. On the start screen, set your **alias** and keep it stable. Every file you add is stamped with it, and the catalog can be sorted by it.
-3. Media never enters git. The viewer moves your files into `vault/_media/`, which is gitignored. Only the notes (`vault/Events/`, `vault/Categories/`) and the index (`vault/.xolitical/`) are committed.
+2. Start the viewer by double-clicking `Start Xolitical Viewer.bat` (Windows) or running `python tools/viewer/server.py`.
+3. On the start screen, set your **alias** and keep it stable. Every file you add is stamped with it.
+4. If the vault folder doesn't exist yet, click **Initialize vault here**.
 
-## Workflow
+## Changing the program
 
-1. Create a branch for your batch: `git checkout -b add/<alias>-<short-description>`.
-2. Sort a batch in the viewer.
-3. Commit what the viewer produced:
-   - `vault/.xolitical/` (the index)
-   - new or changed notes in `vault/Events/` and `vault/Categories/`
+1. Create a branch: `git checkout -b <alias>/<short-description>`.
+2. Make your change. To test it, use a scratch origin folder and a scratch vault, not your real ones. The viewer's `--port` and `--state <file>` flags let a test copy run alongside your normal viewer.
+3. Check that `git status` shows no files under `vault/`. If one appears, `.gitignore` has been changed by mistake.
 4. Open a pull request.
 
-## Rules
+## Rules for vault content
 
-- **Source URL is required whenever one exists.** It is the provenance record, a duplicate check, and the way other collaborators re-fetch media they don't have locally. Leave it out only for material that genuinely has no online source.
-- **Never commit media.** If a media file shows up in `git status`, check `.gitignore` before committing.
+These apply to your own vault, whatever program changes you make.
+
+- **Fill in the source URL whenever one exists.** It is the provenance record and a duplicate check.
 - **Change categories through the viewer** (✎ edit), not by renaming notes in Obsidian. A category edit rewrites every affected note and fixes links. Renaming files by hand leaves the index out of sync.
-- **Write commentary below the line.** Every generated note ends with a `%% xolitical:end %%` line. Anything below it (analysis, links to `[[Papers/...]]`, context) is preserved. Anything above it is regenerated.
-- **Papers** go in `vault/Papers/`. Link to them from an event note, below its `%% xolitical:end %%` line.
-
-## Merges
-
-The index tables keep one row per line, sorted by random IDs. Two people adding different events usually touch different lines, so git merges them cleanly.
-
-If a merge conflicts inside a `.jsonl` file:
-- Keep **both** sides' rows. Each line is an independent record.
-- If the same `id` appears twice, keep the newer `updated` value.
-
-Then regenerate the notes from the merged index:
-
-```bash
-python tools/viewer/server.py --rebuild
-```
-
-A category renamed on one branch while another branch added events to it is fixed by the same command.
+- **Write commentary below the line.** Every generated note ends with a `%% xolitical:end %%` line. Anything below it is preserved; anything above it is regenerated.
+- **Back up your vault.** It isn't in git. Copy `vault/`, or at least `vault/.xolitical/` (the index), from which `python tools/viewer/server.py --rebuild` can regenerate every note.

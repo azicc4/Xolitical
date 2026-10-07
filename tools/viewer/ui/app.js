@@ -128,7 +128,9 @@ async function inspect() {
     `<span class="ok">index found</span> · ${r.vault.files.toLocaleString()} files in ` +
     `${r.vault.events.toLocaleString()} events · ${r.vault.categories} categories</div>`);
   else if (r.vault.path) {
-    lines.push(`<div><b>Vault:</b> ${esc(r.vault.path)}<br><span class="err">No Xolitical index here yet.</span></div>`);
+    lines.push(`<div><b>Vault:</b> ${esc(r.vault.path)}<br><span class="err">` +
+      (r.vault.exists ? "No Xolitical index here yet." : "This folder doesn't exist yet. Initializing creates it.") +
+      `</span></div>`);
     $("s-init").hidden = false;
   }
   sum.innerHTML = lines.join("");

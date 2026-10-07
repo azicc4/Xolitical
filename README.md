@@ -1,8 +1,8 @@
 # Xolitical
 
-A collaborative, GitHub-hosted **Obsidian vault** cataloging political media (screenshots, images, videos and articles from Twitter/X, Instagram, YouTube and Substack). Media is grouped into **named events** and filed under **categories › subcategories**. Every file keeps a link to its original source and the alias of whoever added it.
+A sorting tool that builds an **Obsidian vault** cataloging political media (screenshots, images, videos and articles from Twitter/X, Instagram, YouTube and Substack). Media is grouped into **named events** and filed under **categories › subcategories**. Every file keeps a link to its original source and the alias of whoever added it.
 
-**GitHub holds the program, the notes and the index. It never holds media.** Media files live only on each collaborator's machine, in the vault's gitignored `_media/` folder.
+**GitHub holds only the program.** The vault (media, the index, event and category notes, papers and Obsidian settings) is gitignored and lives only on your machine.
 
 ## How it fits together
 
@@ -13,17 +13,17 @@ Downloads/XMedia/ ─────────── ORIGIN: wherever your downlo
       ▼
 Xolitical/                    this repo (can live anywhere, e.g. later on a portable drive)
   tools/viewer/               the viewer (Python standard library only)
-  vault/                      ← open this folder in Obsidian
+  vault/                      ← open this folder in Obsidian (local only, gitignored)
     Home.md                   dashboard
-    Events/<year>/            one note per event: category links, a gallery of its media, then each file's link + note
+    Events/<year>/            one note per event: category links, a gallery in groups of 10, then every file full size
     Categories/               one note per category and subcategory; each lists its events
     Papers/                   scientific papers and primary sources
-    .xolitical/               the index: relational tables (JSONL), committed to git
-    _media/                   the media itself (gitignored, local only)
+    .xolitical/               the index: relational tables (JSONL)
+    _media/                   the media itself
 ```
 
 - **Event.** A named group of files about the same thing, made by *pairing* files together. Categories, subcategories and tags belong to the event, so every file in it shares them. Each file also gets a **note** of its own that isn't shared.
-- **Index.** `vault/.xolitical/` holds `categories.jsonl`, `events.jsonl`, `files/*.jsonl` and `sessions.jsonl`. Each row is one line, so git can diff and merge them. Every note in `Events/` and `Categories/` is **generated** from this index, and the whole vault can be rebuilt from it.
+- **Index.** `vault/.xolitical/` holds `categories.jsonl`, `events.jsonl`, `files/*.jsonl` and `sessions.jsonl`. Each row is one line. Every note in `Events/` and `Categories/` is **generated** from this index, and the whole vault can be rebuilt from it.
 - **Portable.** No absolute path is stored anywhere. Notes embed media by filename, and Obsidian finds a file wherever it sits in the vault. To move to a portable drive, move the whole `Xolitical/` folder.
 
 ## Quickstart
@@ -45,7 +45,7 @@ Requirements: [Python 3.9+](https://www.python.org/downloads/) and [Obsidian](ht
 3. On the start screen:
    1. Enter your **alias**.
    2. Pick the **origin** folder (your downloads).
-   3. Confirm the **vault**, which defaults to `vault/` in this repo.
+   3. Confirm the **vault**, which defaults to `vault/` in this repo. On a fresh copy that folder doesn't exist yet: click **Initialize vault here** to create it.
 
    The viewer finds the vault's index and shows how many files are waiting. Click **Begin session**. Your alias and folders are remembered in `~/.xolitical/state.json`.
 4. Open `vault/` in Obsidian and start at `Home.md`.
@@ -88,13 +88,13 @@ Requirements: [Python 3.9+](https://www.python.org/downloads/) and [Obsidian](ht
 
 ## In Obsidian
 
-- **Gallery.** Every event note opens with a **Gallery** of all its images and videos. The images are laid out in columns at their own shape, with no cropping. This uses the `xolitical` CSS snippet, which the viewer installs and switches on (Settings → Appearance → CSS snippets).
-- **Full size.** Below the gallery, each file is listed as a link with its source and note. Click a link to open the file full size.
+- **Gallery.** Every event note opens with a **Gallery** of its images and videos, in groups of 10. The images are laid out in columns at their own shape, with no cropping. This uses the `xolitical` CSS snippet, which the viewer installs and switches on (Settings → Appearance → CSS snippets).
+- **Full size.** Each group's **↓ View full size** link jumps to its "Files 1-10" (11-20, …) section further down. That section shows every file full size with its source and note, and has a **↑ Back to the gallery** link.
 - **Optional plugin:** the community plugin **Image Toolkit** adds click-to-enlarge, zoom and arrow-key browsing to gallery images.
 
 ## Fixing older files
 
-Vaults sorted before `.jfif` handling existed can be fixed in one step. It renames the files, with the same content and SHA-256 checks, and updates the index and notes. It is safe to re-run. On a collaborator's machine it also renames their local copies to match.
+Vaults sorted before `.jfif` handling existed can be fixed in one step. It renames the files, with the same content and SHA-256 checks, and updates the index and notes. It is safe to re-run.
 
 ```bash
 python tools/viewer/server.py --fix-extensions
@@ -102,13 +102,15 @@ python tools/viewer/server.py --fix-extensions
 
 ## Rebuilding the vault
 
-After a git merge, or if notes are ever edited by hand above their `%% xolitical:end %%` line, regenerate every note from the index:
+If notes are ever edited by hand above their `%% xolitical:end %%` line, regenerate every note from the index:
 
 ```bash
 python tools/viewer/server.py --rebuild
 ```
 
 Text written **below** the `%% xolitical:end %%` line of any generated note is always kept.
+
+**Backups.** Because the vault isn't in git, back it up yourself: copy the whole `vault/` folder, or at least `vault/.xolitical/` (the index), from which every note can be rebuilt. The media in `_media/` can't be rebuilt.
 
 ## Contributing
 

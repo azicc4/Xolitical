@@ -1,13 +1,11 @@
 # Per-user config (copy config.example.json -> config.json)
 config.json
 
-# Media never enters git: it lives in each machine's vault/_media/ (moved there
-# from your origin folder by the viewer). Notes + index are committed instead;
-# every file's source URL lets collaborators re-fetch the original.
-vault/_media/
-
-# Local-only viewer cache (thumbnails)
-vault/.xolitical/cache/
+# The vault is local-only: media, the index (.xolitical/), event and category
+# notes, papers and Obsidian settings never enter git. The repo holds only the
+# viewer program; "Initialize vault here" on the start screen creates a fresh
+# vault (Home, views, gallery stylesheet) on any machine.
+vault/
 
 # Atomic-write temp files
 *.tmp
@@ -15,12 +13,6 @@ vault/.xolitical/cache/
 
 # Legacy Phase 1 inbox, if you still have one locally
 unsorted/
-
-# Per-user Obsidian state (shared vault config IS committed)
-vault/.obsidian/workspace.json
-vault/.obsidian/workspace-mobile.json
-vault/.obsidian/cache
-vault/.obsidian/plugins/*/data.json
 
 # OS / editor junk
 Thumbs.db
